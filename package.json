@@ -1,0 +1,32 @@
+{
+  "name": "pardsrl-collector",
+  "version": "1.0.0",
+  "description": "Pardsrl iot plattform - collector",
+  "main": "index.js",
+  "scripts": {
+    "lint": "standard",
+    "importer": "DEBUG=pardsrl:* REDIS_HOST=10.0.0.7 METRICS=hta,anem,bpozo,llave,haparejo node redisImporter.js",
+    "dev": "DEBUG=pardsrl:* MQTT=mqtt://app.pardsrl.com.ar:5143 REDIS_HOST=10.0.0.7 METRICS=hta,anem,bpozo,llave,haparejo node ."
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pardsrl/pardsrl-collector.git"
+  },
+  "author": "Santiago Semhan <santiago.semhan@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/pardsrl/pardsrl-collector/issues"
+  },
+  "homepage": "https://github.com/pardsrl/pardsrl-collector#readme",
+  "dependencies": {
+    "chalk": "^2.3.2",
+    "debug": "^3.1.0",
+    "machine-uuid-sync": "^1.0.9",
+    "pardsrl-agent": "git://github.com/pardsrl/pardsrl-agent.git#semver:^1.*",
+    "redis": "^2.8.0",
+    "sleep": "^5.1.1"
+  },
+  "devDependencies": {
+    "standard": "^11.0.1"
+  }
+}
