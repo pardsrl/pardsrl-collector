@@ -5,8 +5,8 @@
   "main": "index.js",
   "scripts": {
     "lint": "standard",
-    "importer": "DEBUG=pardsrl:* REDIS_HOST=10.0.0.7 METRICS=hta,anem,bpozo,llave,haparejo node redisImporter.js",
-    "dev": "DEBUG=pardsrl:* MQTT=mqtt://app.pardsrl.com.ar:5143 REDIS_HOST=10.0.0.7 METRICS=hta,anem,bpozo,llave,haparejo node ."
+    "importer": "DEBUG=pardsrl:* REDIS_HOST=localhost METRICS=hta,anem,bpozo,llave,haparejo node redisImporter.js",
+    "dev": "DEBUG=pardsrl:* MQTT=mqtt://localhost:1883 REDIS_HOST=localhost METRICS=hta,anem,bpozo,llave,haparejo node ."
   },
   "repository": {
     "type": "git",
