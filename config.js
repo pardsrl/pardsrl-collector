@@ -11,7 +11,7 @@ module.exports = {
     queue: 'streams'
   },
   agent:{
-    agent:    process.env.NAME || 'guest',
+    name:    process.env.NAME || 'guest',
     uuid:     process.env.UUID || uuid,
     interval: process.env.INTERVAL || 1000,
     mqtt:     process.env.MQTT || 'mqtt://localhost'

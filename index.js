@@ -27,8 +27,8 @@ redisClient.on('error', handleFatalError)
 let _interval = agentCfg.interval
 
 const agent = new PardAgent({
-  nombre: '075',
-  uuid: agentCfg.uuid,
+  nombre:   agentCfg.name,
+  uuid:     agentCfg.uuid,
   interval: _interval,
   mqtt: {
     host: agentCfg.mqtt
