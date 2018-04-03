@@ -19,15 +19,9 @@ const redisClient = Redis.createClient({
 
 const llenAsync = promisify(redisClient.llen).bind(redisClient)
 
-redisClient.on('connect', () => {
-  debug(chalk.blue('[REDIS]'), 'Redis connected to server.')
-})
-redisClient.on('error', handleFatalError)
-
-let _interval = agentCfg.interval
+const _interval = agentCfg.interval
 
 const agent = new PardAgent({
-  nombre:   agentCfg.name,
   uuid:     agentCfg.uuid,
   interval: _interval,
   mqtt: {
@@ -37,22 +31,29 @@ const agent = new PardAgent({
 
 let _currentMetricsValues = {}
 let _clientConnected = false
-let _resetMetrics = null
+let _resetMetrics = false
 let _syncX = 1
 
-metrics.forEach((metric) => {
-  setDefaultMetricValue(metric)
 
-  // add metric to agent for report to mqtt server
-  agent.addMetric(metric, () => {
-    return {
-      t: _currentMetricsValues[metric].time || new Date().getTime(),
-      value: _currentMetricsValues[metric].value
-    }
+redisClient.on('connect', () => {
+  debug(chalk.blue('[REDIS]'), 'Redis connected to server.')
+
+  agent.connect()
+
+  resetMetrics()
+
+  metrics.forEach((metric) => {
+    // add metric to agent for report to mqtt server
+    agent.addMetric(metric, () => {
+      return {
+        time:  _currentMetricsValues[metric].time || new Date().getTime(),
+        value: _currentMetricsValues[metric].value
+      }
+    })
   })
-})
 
-agent.connect()
+})
+redisClient.on('error', handleFatalError)
 
 // setTimeout(()=> agent.setInterval(250),5000)
 // setTimeout(()=> agent.setInterval(interval),20000)
@@ -63,14 +64,14 @@ agent.connect()
 agent.on('connected', () => {
   debug(chalk.green(`agent connected`))
   _clientConnected = true
-  waitForRedisPush()
 })
 agent.on('disconnected', () => {
   _clientConnected = false
 })
 agent.on('message', () => {
-  // reset metrics
-  _resetMetrics && process.nextTick(resetMetrics)
+    // reset metrics
+    _resetMetrics && process.nextTick(resetMetrics)
+    //process.nextTick(resetMetrics)
 })
 
 agent.on('reconnecting', () => {
@@ -90,11 +91,14 @@ agent.on('agent/message', (payload)=>{
  *
  */
 function resetMetrics () {
+  debug('Reset Metrics ...')
   metrics.forEach((metric) => {
     // set an array with current values for each metric defined
     setDefaultMetricValue(metric)
   })
   _resetMetrics = false
+  // call for new Redis Data
+  return process.nextTick(waitForRedisPush)
 }
 /**
  * Set default value for a given metric
@@ -121,17 +125,18 @@ async function waitForRedisPush () {
     let payload = parsePayload(data[1])
 
     if (payload) {
-      // set internal flag to reset metric on next agent message
-      _resetMetrics = true
       // iterate payload searching for valid metrics
       for (let metric in payload) {
-        if (metrics.indexOf(metric) && metric !== 't') {
+        if (metrics.indexOf(metric) !== -1 && metric !== 't') {
+          // console.log(metric)
           // get time from payload and store in current metric time
           _currentMetricsValues[metric].time = payload.t || null
           // store metric in current metric value
           _currentMetricsValues[metric].value = payload[metric]
         }
       }
+      // set internal flag to reset metric on next agent message
+      _resetMetrics = true
     } else {
       debug(chalk.red('[REDIS DATA] Invalid Json'))
     }
@@ -143,21 +148,15 @@ async function waitForRedisPush () {
     // if redis queue has not synchronized data this block accelerates velocity to 10x faster
     if (queueLength > 0) {
       // if is first time, waits original interval for prevent, reads before reports
-      if (_syncX === 1) {
-        _syncX = 10
-        agent.setInterval(_interval / _syncX)
-        sleep.msleep(_interval) // the wait trick
-      } else {
-        sleep.msleep(_interval / _syncX) // faster report 
+      if (_syncX === 1 ) {
+        _syncX = 4       
+        agent.setInterval(parseInt(_interval / _syncX))
       }
-    } else {
+    } else if(_syncX === 4){
       // reset all to original settings
       _syncX = 1
       agent.setInterval(_interval)
-      sleep.msleep(_interval)
     }
-
-    waitForRedisPush()
   })
 }
 
